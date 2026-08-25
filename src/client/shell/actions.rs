@@ -39,9 +39,9 @@ impl ClientShellState {
                         });
                     if let Some(current) = current {
                         let width = if action == crate::input::KeybindAction::ResizePaneLeft {
-                            current.saturating_sub(1).max(1)
+                            current.saturating_sub(2).max(1)
                         } else {
-                            current.saturating_add(1)
+                            current.saturating_add(2)
                         };
                         self.config.zoom_width = std::num::NonZeroU16::new(width);
                         self.invalidate_pane_surface();

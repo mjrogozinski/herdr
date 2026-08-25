@@ -60,7 +60,7 @@ fn zoom_width_resize_uses_client_geometry_and_preserves_chrome() {
     let mut state = zoomed_state(3);
     state.mode = ClientShellMode::Resize;
     for (action, expected) in [
-        (crate::input::KeybindAction::ResizePaneRight, 21),
+        (crate::input::KeybindAction::ResizePaneRight, 22),
         (crate::input::KeybindAction::ResizePaneLeft, 20),
     ] {
         let mut outcome = ClientShellInput::default();
@@ -117,4 +117,28 @@ fn zoom_width_keeps_mouse_hit_coordinates_in_the_centered_surface() {
     assert_eq!(state.hits.panes[0].rect.x, area.x);
     assert_eq!(state.hits.panes[0].inner_rect.x, area.x + 1);
     assert_eq!(state.hits.panes[0].inner_rect.width, 20);
+}
+
+#[test]
+fn zoom_width_resize_moves_both_margins_by_one_column() {
+    let mut state = zoomed_state(3);
+    let before = state.layout(120, 30).pane_surface;
+    let mut outcome = ClientShellInput::default();
+    state.record_binding(
+        crate::input::KeybindMatch::Action(crate::input::KeybindAction::ResizePaneRight),
+        &mut outcome,
+    );
+    let after = state.layout(120, 30).pane_surface;
+    assert_eq!(after.x + 1, before.x);
+    assert_eq!(after.right(), before.right() + 1);
+}
+
+#[test]
+fn zoom_width_waits_for_surface_at_correct_size_after_endpoint_activation() {
+    let mut state = zoomed_state(3);
+    // An endpoint's initial surface may have been requested before its chrome
+    // width was known. Do not expose hit targets at the old geometry.
+    assert!(state.compose(120, 30).is_none());
+    assert!(state.hits.panes.is_empty());
+    assert_eq!(state.surface_size(120, 30).cols, 23);
 }
