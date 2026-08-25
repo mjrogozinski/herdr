@@ -723,7 +723,6 @@ pub(crate) enum PaneZoomCommand {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PaneZoomNoopReason {
-    SinglePane,
     AlreadyZoomed,
     AlreadyUnzoomed,
 }
@@ -828,15 +827,6 @@ impl AppState {
             .workspaces
             .get_mut(ws_idx)
             .and_then(|ws| ws.tabs.get_mut(tab_idx))?;
-        if tab.layout.pane_count() <= 1 {
-            return Some(PaneZoomOutcome {
-                changed: false,
-                focus_changed,
-                reason: Some(PaneZoomNoopReason::SinglePane),
-                zoomed: tab.zoomed,
-            });
-        }
-
         let desired = match command {
             PaneZoomCommand::Toggle => !tab.zoomed,
             PaneZoomCommand::On => true,
@@ -4370,8 +4360,10 @@ mod tests {
     }
 
     #[test]
-    fn toggle_zoom_single_pane_noop() {
+    fn toggle_zoom_works_for_single_pane() {
         let mut state = app_with_workspaces(&["test"]);
+        state.toggle_zoom();
+        assert!(state.workspaces[0].zoomed);
         state.toggle_zoom();
         assert!(!state.workspaces[0].zoomed);
     }

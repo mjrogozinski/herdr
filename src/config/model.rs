@@ -1,4 +1,7 @@
-use std::{collections::BTreeSet, num::NonZeroUsize};
+use std::{
+    collections::BTreeSet,
+    num::{NonZeroU16, NonZeroUsize},
+};
 
 use crossterm::event::KeyModifiers;
 use serde::{de, Deserialize, Deserializer, Serialize};
@@ -948,6 +951,8 @@ pub struct UiConfig {
     pub sidebar_collapsed_mode: SidebarCollapsedModeConfig,
     /// Terminal width at or below which Herdr uses the mobile single-column layout. Default: 64.
     pub mobile_width_threshold: u16,
+    /// Terminal content width used for centered zoomed panes. Unset uses the full pane area.
+    pub zoom_width: Option<NonZeroU16>,
     /// Capture mouse input for Herdr's mouse UI. Default: true.
     pub mouse_capture: bool,
     /// Copy text selected with the mouse. Default: true.
@@ -1204,6 +1209,7 @@ impl Default for UiConfig {
             sidebar_start_collapsed: false,
             sidebar_collapsed_mode: SidebarCollapsedModeConfig::Compact,
             mobile_width_threshold: DEFAULT_MOBILE_WIDTH_THRESHOLD,
+            zoom_width: None,
             mouse_capture: true,
             copy_on_select: true,
             host_cursor: HostCursorModeConfig::Auto,
@@ -1680,17 +1686,20 @@ cjk_ime_agents = ["claude", "codex"]
             default_config.ui.mobile_width_threshold,
             DEFAULT_MOBILE_WIDTH_THRESHOLD
         );
+        assert_eq!(default_config.ui.zoom_width, None);
 
         let toml = r#"
 [ui]
 sidebar_min_width = 12
 sidebar_max_width = 80
 mobile_width_threshold = 96
+zoom_width = 120
 "#;
         let config: Config = toml::from_str(toml).unwrap();
         assert_eq!(config.ui.sidebar_min_width, 12);
         assert_eq!(config.ui.sidebar_max_width, 80);
         assert_eq!(config.ui.mobile_width_threshold, 96);
+        assert_eq!(config.ui.zoom_width.map(NonZeroU16::get), Some(120));
     }
 
     #[test]

@@ -313,6 +313,17 @@ The sidebar is the main Herdr dashboard. Search `ui.` in the [Config reference](
 
 `ui.pane_borders` accepts `"auto"` (the default, borders only for split panes), `"always"` (also frame a single pane), or `"off"`. A single-pane frame requires `ui.pane_outer_borders = true`, because all its edges are outer edges. Existing boolean values remain valid: `true` means `"auto"` and `false` means `"off"`.
 
+Keep zoomed pane content at a readable width on wide terminals with:
+
+```toml
+[ui]
+zoom_width = 120
+```
+
+The zoomed pane is centered horizontally and receives exactly that many terminal content columns. Borders and the optional scrollbar sit outside the configured content width. On a narrower terminal area, Herdr uses all available columns instead. Leave `zoom_width` unset to preserve full-width zoom.
+
+While a pane is zoomed, enter resize mode and press left/`h` to decrease its content width or right/`l` to increase it, one column at a time.
+
 Set `tab_bar_position = "bottom"` under `[ui]` to place the desktop tab row below the terminal panes. Prefix, Navigate, Copy, and Resize mode bars temporarily replace the bottom tab row while active. The default is `"top"`.
 
 Configure an ordered tmux-style status area at the right edge of the tab row:

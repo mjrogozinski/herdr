@@ -428,6 +428,23 @@ pub(super) fn complete_endpoint_activation(
     }
 
     let _ = pending.take();
+    // Activation installs surfaces outside normal frame delivery. Reconcile the
+    // new endpoint's borders and scrollbar before presenting centered content.
+    if let Some(shell) = state
+        .shell
+        .as_ref()
+        .filter(|shell| shell.zoom_chrome_width().is_some())
+    {
+        let resize = client_shell_resize_message(
+            shell,
+            state.reported_size.0,
+            state.reported_size.1,
+            state.reported_cell_size.0,
+            state.reported_cell_size.1,
+            state.pixel_mouse_available(),
+        );
+        let _ = write_to_server(endpoints, &resize);
+    }
     endpoints.unfreeze_input();
     let successor = match completion {
         endpoint::ActivationCompletion::RestoredSource {

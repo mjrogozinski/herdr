@@ -186,6 +186,13 @@ impl ClientShellState {
             return None;
         }
         let layout = self.layout(cols, rows);
+        if self.config.zoom_width.is_some()
+            && (surface.frame.width != layout.pane_surface.width.max(1)
+                || surface.frame.height != layout.pane_surface.height.max(1))
+        {
+            self.hits = ShellHitMap::default();
+            return None;
+        }
         if self.last_tab_bar_width != Some(layout.tab_bar.width) {
             self.last_tab_bar_width = Some(layout.tab_bar.width);
             self.reveal_focused_tab = true;

@@ -20,6 +20,36 @@ impl ClientShellState {
                 self.persist_chrome_preferences(outcome);
             }
             crate::input::KeybindMatch::Action(action) => {
+                if self.focused_tab_zoomed()
+                    && matches!(
+                        action,
+                        crate::input::KeybindAction::ResizePaneLeft
+                            | crate::input::KeybindAction::ResizePaneRight
+                    )
+                {
+                    let current = self
+                        .config
+                        .zoom_width
+                        .map(std::num::NonZeroU16::get)
+                        .or_else(|| {
+                            self.pane_surface
+                                .as_ref()
+                                .and_then(|surface| surface.panes.iter().find(|pane| pane.focused))
+                                .map(|pane| pane.inner_rect.width)
+                        });
+                    if let Some(current) = current {
+                        let width = if action == crate::input::KeybindAction::ResizePaneLeft {
+                            current.saturating_sub(1).max(1)
+                        } else {
+                            current.saturating_add(1)
+                        };
+                        self.config.zoom_width = std::num::NonZeroU16::new(width);
+                        self.invalidate_pane_surface();
+                        outcome.resize = true;
+                        outcome.repaint = true;
+                        return;
+                    }
+                }
                 if self.workspace_preview_action_blocked()
                     && matches!(
                         action,

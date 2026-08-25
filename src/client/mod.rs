@@ -1542,12 +1542,29 @@ async fn run_client_loop(
                         if !endpoint_active {
                             continue;
                         }
+                        let previous_chrome = state
+                            .shell
+                            .as_ref()
+                            .and_then(|shell| shell.zoom_chrome_width());
                         let composed = if let Some(shell) = &mut state.shell {
                             shell.set_pane_surface(surface);
                             shell.compose(state.reported_size.0, state.reported_size.1)
                         } else {
                             None
                         };
+                        if let Some(shell) = state.shell.as_ref() {
+                            if previous_chrome != shell.zoom_chrome_width() {
+                                let resize = client_shell_resize_message(
+                                    shell,
+                                    state.reported_size.0,
+                                    state.reported_size.1,
+                                    state.reported_cell_size.0,
+                                    state.reported_cell_size.1,
+                                    state.pixel_mouse_available(),
+                                );
+                                let _ = write_to_server(&mut write_stream, &resize);
+                            }
+                        }
                         apply_client_shell_input_source_changes(
                             &mut state,
                             &mut prefix_input_source,

@@ -1447,7 +1447,6 @@ impl App {
                     zoom_changed: outcome.changed,
                     focus_changed: outcome.focus_changed,
                     reason: outcome.reason.map(|reason| match reason {
-                        PaneZoomNoopReason::SinglePane => PaneZoomReason::SinglePane,
                         PaneZoomNoopReason::AlreadyZoomed => PaneZoomReason::AlreadyZoomed,
                         PaneZoomNoopReason::AlreadyUnzoomed => PaneZoomReason::AlreadyUnzoomed,
                     }),
@@ -3945,7 +3944,7 @@ mod tests {
     }
 
     #[test]
-    fn api_pane_zoom_single_pane_returns_noop() {
+    fn api_pane_zoom_single_pane_toggles() {
         let mut app = app_with_linked_worktree();
         app.state.active = Some(0);
         app.state.selected = 0;
@@ -3964,13 +3963,13 @@ mod tests {
         let ResponseResult::PaneZoom { zoom } = success.result else {
             panic!("expected pane zoom response");
         };
-        assert!(!zoom.changed);
-        assert!(!zoom.zoom_changed);
+        assert!(zoom.changed);
+        assert!(zoom.zoom_changed);
         assert!(!zoom.focus_changed);
-        assert_eq!(zoom.reason, Some(PaneZoomReason::SinglePane));
+        assert_eq!(zoom.reason, None);
         assert_eq!(zoom.pane_id, root_public);
-        assert!(!zoom.zoomed);
-        assert!(!app.state.workspaces[0].tabs[0].zoomed);
+        assert!(zoom.zoomed);
+        assert!(app.state.workspaces[0].tabs[0].zoomed);
     }
 
     #[test]

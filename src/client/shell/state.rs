@@ -18,6 +18,7 @@ pub(crate) struct ClientShellConfig {
     pub(super) sidebar_max_width: u16,
     pub(super) sidebar_start_collapsed: bool,
     pub(super) sidebar_collapsed_mode: SidebarCollapsedModeConfig,
+    pub(super) zoom_width: Option<std::num::NonZeroU16>,
     pub(super) mobile_width_threshold: u16,
     pub(super) tab_bar_position: TabBarPositionConfig,
     pub(super) hide_tab_bar_when_single_tab: bool,
@@ -863,6 +864,7 @@ pub(crate) struct ClientShellState {
     pub(super) active_snapshot_generation: Option<u64>,
     pub(super) pane_surface_generation: Option<u64>,
     pub(super) pane_surface: Option<PaneSurfaceFrame>,
+    pub(super) zoom_chrome_width: u16,
     /// A future projection surface waits here until its matching snapshot arrives. The visible
     /// pane surface always remains an exact snapshot pair.
     pub(super) pending_pane_surface: Option<PaneSurfaceFrame>,
@@ -1036,6 +1038,7 @@ impl ClientShellState {
             active_snapshot_generation: None,
             pane_surface_generation: None,
             pane_surface: None,
+            zoom_chrome_width: 0,
             pending_pane_surface: None,
             graphics: crate::kitty_graphics::surface::ClientState::new(),
             graphics_cell_size: crate::kitty_graphics::HostCellSize {
@@ -1219,13 +1222,35 @@ impl ClientShellState {
     }
 
     pub(super) fn layout(&self, cols: u16, rows: u16) -> ClientShellLayout {
-        self.config.layout(
+        let mut layout = self.config.layout(
             cols,
             rows,
             self.sidebar_collapsed,
             self.focused_tab_count(),
             self.sidebar_width,
-        )
+        );
+        if let Some(width) = self.config.zoom_width {
+            if self.focused_tab_zoomed() {
+                let chrome = self.zoom_chrome_width;
+                let width = width
+                    .get()
+                    .saturating_add(chrome)
+                    .min(layout.pane_surface.width);
+                layout.pane_surface.x += (layout.pane_surface.width - width) / 2;
+                layout.pane_surface.width = width;
+            }
+        }
+        layout
+    }
+
+    pub(crate) fn zoom_chrome_width(&self) -> Option<u16> {
+        self.config.zoom_width.map(|_| self.zoom_chrome_width)
+    }
+
+    pub(super) fn focused_tab_zoomed(&self) -> bool {
+        self.snapshot
+            .as_ref()
+            .is_some_and(|snapshot| snapshot.tabs.iter().any(|tab| tab.focused && tab.zoomed))
     }
 
     pub(crate) fn surface_size(&self, cols: u16, rows: u16) -> ClientSurfaceSize {
@@ -1660,6 +1685,9 @@ impl ClientShellState {
         // exact-pair compose guard prevents it from replacing the visible frame.
         if surface.projection_revision != snapshot.revision {
             self.hits = ShellHitMap::default();
+        }
+        if let Some(pane) = surface.panes.iter().find(|pane| pane.focused) {
+            self.zoom_chrome_width = pane.rect.width.saturating_sub(pane.inner_rect.width);
         }
         self.acknowledge_active_surface_agents(&surface);
         let previous_popup = self.popup_terminal_id.clone();

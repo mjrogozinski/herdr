@@ -254,6 +254,10 @@ const DEFAULT_CONFIG: &str = r##"# herdr configuration
 # Increase this for foldables, tablets, or wide phone terminals.
 # mobile_width_threshold = 64
 
+# Center zoomed pane content at this width in terminal columns.
+# Unset uses all available columns; narrow terminal areas are clamped automatically.
+# zoom_width = 120
+
 # Capture mouse input for Herdr's mouse UI.
 # Set false to let the terminal handle normal clicks, such as Cmd-clicking URLs.
 # Pane apps like lazygit and btop can still receive mouse when they request it.
